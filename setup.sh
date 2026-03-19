@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# One-time setup for Behavioral AI Bot on Ubuntu
+# One-time setup for Behavioral AI Bot on Ubuntu (Electron frontend only).
+# The Node.js backend and MongoDB run on the Windows machine.
 set -e
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=== Behavioral AI Bot — Ubuntu Setup ==="
 
@@ -9,12 +12,7 @@ echo ""
 echo "--- Installing system packages ---"
 sudo apt-get update -qq
 sudo apt-get install -y \
-  docker.io \
-  docker-compose-plugin \
   xdotool \
-  python3 \
-  python3-pip \
-  python3-venv \
   curl \
   tar \
   libgtk-3-0 \
@@ -28,60 +26,33 @@ sudo apt-get install -y \
   libgbm1 \
   libasound2
 
-# Add user to docker group (log out and back in after setup for this to take effect)
-sudo usermod -aG docker "$USER" || true
-
 # ── 2. Node.js ────────────────────────────────────────────────────────────────
-if ! command -v node &>/dev/null; then
-  echo ""
+echo ""
+if ! command -v node &>/dev/null || [[ "$(node -e 'process.stdout.write(process.versions.node.split(".")[0])')" -lt 20 ]]; then
   echo "--- Installing Node.js 20 ---"
   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
   sudo apt-get install -y nodejs
 fi
 echo "Node: $(node -v)   npm: $(npm -v)"
 
-# ── 3. Python virtual environment for the backend ────────────────────────────
+# ── 3. Frontend dependencies + build ─────────────────────────────────────────
 echo ""
-echo "--- Setting up Python backend ---"
-BACKEND_DIR="$(dirname "$0")/backend"
-python3 -m venv "$BACKEND_DIR/.venv"
-"$BACKEND_DIR/.venv/bin/pip" install --quiet --upgrade pip
-"$BACKEND_DIR/.venv/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
-echo "Backend dependencies installed."
+echo "--- Installing and building frontend ---"
+npm --prefix "$ROOT/frontend" install
+npm --prefix "$ROOT/frontend" run build
 
-# ── 4. Frontend Node modules ──────────────────────────────────────────────────
-echo ""
-echo "--- Installing frontend dependencies ---"
-npm --prefix "$(dirname "$0")/frontend" install
-
-# ── 5. Root (Electron) Node modules ──────────────────────────────────────────
+# ── 4. Electron (root) dependencies ──────────────────────────────────────────
 echo ""
 echo "--- Installing Electron dependencies ---"
-npm install --prefix "$(dirname "$0")"
-
-# ── 6. Start MongoDB ──────────────────────────────────────────────────────────
-echo ""
-echo "--- Starting MongoDB via Docker ---"
-docker compose -f "$(dirname "$0")/docker-compose.yml" up -d mongodb
+npm install --prefix "$ROOT"
 
 echo ""
 echo "=== Setup complete ==="
 echo ""
-echo "How to run:"
+echo "Run the Electron app:"
+echo "  cd $ROOT && ./run.sh"
 echo ""
-echo "  Option A — Electron app (recommended):"
-echo "    cd $(dirname "$0")"
-echo "    npx electron ."
+echo "On first launch, enter the Windows server URL when prompted,"
+echo "e.g. http://192.168.1.105:8000"
 echo ""
-echo "  Option B — Docker (backend in container, Electron loads localhost:3000):"
-echo "    docker compose up -d          # starts MongoDB + backend"
-echo "    cd frontend && npm run dev    # starts Next.js"
-echo "    npx electron .                # opens the window"
-echo ""
-echo "  Option C — Browser only (no Electron):"
-echo "    ./run.sh                      # starts backend + frontend"
-echo "    Open http://localhost:3000 in your browser"
-echo ""
-echo "NOTE: xdotool auto-typing requires X11 (not Wayland)."
-echo "      If on Wayland, run: export GDK_BACKEND=x11"
-echo "      or log in selecting 'Ubuntu on Xorg' at the login screen."
+echo "NOTE: xdotool requires X11. If on Wayland, run: GDK_BACKEND=x11 npx electron ."

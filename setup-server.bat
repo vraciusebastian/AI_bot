@@ -7,29 +7,27 @@ echo.
 
 set BACKEND_DIR=%~dp0backend
 
-echo [1/3] Creating Python virtual environment...
-python -m venv "%BACKEND_DIR%\.venv"
+echo Checking Node.js...
+node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Failed to create venv. Is Python 3.10+ installed?
+    echo [ERROR] Node.js not found. Install Node.js 20+ from https://nodejs.org
     pause
     exit /b 1
 )
 
-echo [2/3] Installing Python dependencies...
-"%BACKEND_DIR%\.venv\Scripts\pip" install --upgrade pip
-"%BACKEND_DIR%\.venv\Scripts\pip" install -r "%BACKEND_DIR%\requirements.txt"
+echo Installing backend dependencies...
+cd /d "%BACKEND_DIR%"
+npm install
 if %errorlevel% neq 0 (
-    echo [ERROR] pip install failed.
+    echo [ERROR] npm install failed.
     pause
     exit /b 1
 )
-
-echo [3/3] Pulling MongoDB Docker image...
-docker pull mongo:7
 
 echo.
 echo ============================================
 echo  Setup complete!
-echo  Run start-server.bat to launch the server.
+echo  Make sure MongoDB is installed as a Windows service.
+echo  Then run start-server.bat to launch the server.
 echo ============================================
 pause

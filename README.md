@@ -3,10 +3,10 @@
 A desktop app that automates the Revelo behavioral data annotation workflow.
 
 **Architecture:**
-- **Windows machine** — runs the Python backend (API) and MongoDB database
+- **Windows machine** — runs the Node.js backend (API) and MongoDB
 - **Ubuntu machine** — runs the Electron desktop app (UI)
 
-The Ubuntu app connects to the Windows server over your local network (or localhost if both are on the same machine).
+The Ubuntu app connects to the Windows server over your local network.
 
 ---
 
@@ -15,12 +15,9 @@ The Ubuntu app connects to the Windows server over your local network (or localh
 1. [Requirements](#requirements)
 2. [Windows Server Setup](#windows-server-setup)
 3. [Ubuntu Client Setup](#ubuntu-client-setup)
-4. [Building the Ubuntu App (.AppImage)](#building-the-ubuntu-appimage)
-5. [Running the App — Step by Step](#running-the-app--step-by-step)
-6. [Workflow Guide](#workflow-guide)
-7. [xdotool Terminal Automation](#xdotool-terminal-automation)
-8. [Creating the Tar File](#creating-the-tar-file)
-9. [Troubleshooting](#troubleshooting)
+4. [Running the App](#running-the-app)
+5. [Workflow Guide](#workflow-guide)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -29,14 +26,13 @@ The Ubuntu app connects to the Windows server over your local network (or localh
 ### Windows machine
 | Tool | Version | Notes |
 |------|---------|-------|
-| Python | 3.10+ | [python.org](https://www.python.org/downloads/) |
-| Docker Desktop | latest | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| Node.js | 20+ | Only needed to build the frontend once |
+| Node.js | 20+ | [nodejs.org](https://nodejs.org) |
+| MongoDB | 7.0 | Installed as a Windows service — [mongodb.com](https://www.mongodb.com/try/download/community) |
 
 ### Ubuntu machine
 | Tool | Version | Notes |
 |------|---------|-------|
-| Node.js | 20+ | For building the AppImage |
+| Node.js | 20+ | For running the Electron app |
 | xdotool | any | `sudo apt install xdotool` — enables auto-typing |
 | X11 display | — | Required for xdotool (see [Wayland note](#xdotool-on-wayland)) |
 
@@ -46,14 +42,27 @@ The Ubuntu app connects to the Windows server over your local network (or localh
 
 Do this **once** on the Windows machine.
 
-### Step 1 — Clone the project
+### Step 1 — Install MongoDB
+
+Download the **MongoDB Community Server 7.0 MSI** from [mongodb.com/try/download/community](https://www.mongodb.com/try/download/community).
+
+Run the installer:
+- Choose **Complete** installation
+- Check **"Install MongoDB as a Windows Service"**
+
+Verify it is running:
+```powershell
+Get-Service -Name MongoDB
+```
+
+### Step 2 — Clone the project
 
 ```cmd
 git clone <your-repo-url>
-cd "behavioral work"
+cd behavioral_work
 ```
 
-### Step 2 — Run the setup script
+### Step 3 — Run the setup script
 
 Double-click **`setup-server.bat`** or run in Command Prompt:
 
@@ -61,38 +70,28 @@ Double-click **`setup-server.bat`** or run in Command Prompt:
 setup-server.bat
 ```
 
-This will:
-- Create a Python virtual environment in `backend/.venv/`
-- Install all Python dependencies
-- Pull the MongoDB Docker image
+This installs the Node.js backend dependencies (`npm install` in `backend/`).
 
-### Step 3 — Allow port 8000 through Windows Firewall
+### Step 4 — Allow port 8000 through Windows Firewall
 
-Open **PowerShell as Administrator**:
+Open **PowerShell as Administrator** (one-time only):
 
 ```powershell
 New-NetFirewallRule -DisplayName "Behavioral AI Bot API" `
   -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow
 ```
 
-### Step 4 — Start the server
+### Step 5 — Start the server
 
-Every time you want to use the app, run **`start-server.bat`** (or the PowerShell version):
-
-```cmd
-start-server.bat
-```
-
-Or with PowerShell for more info (shows your IP addresses):
+Every time you want to use the app:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File start-server.ps1
 ```
 
-The script will print your machine's IP addresses, for example:
+This starts MongoDB (if not already running) and launches the backend on port 8000. It also prints your machine's IP addresses, for example:
 ```
   http://192.168.1.105:8000
-  http://172.20.10.3:8000
 ```
 
 Keep this terminal open while using the app.
@@ -101,105 +100,58 @@ Keep this terminal open while using the app.
 
 ## Ubuntu Client Setup
 
-### Step 1 — Install system packages
+Do this **once** on the Ubuntu machine.
 
-```bash
-sudo apt update
-sudo apt install -y nodejs npm xdotool
-```
-
-> **Node.js 20+** — if your distro ships an older version:
-> ```bash
-> curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-> sudo apt install -y nodejs
-> ```
-
-### Step 2 — Clone the project (same repo)
+### Step 1 — Clone the project
 
 ```bash
 git clone <your-repo-url>
-cd "behavioral work"
+cd behavioral_work
 ```
 
-### Step 3 — Build the frontend
-
-This creates the static files that the Electron app will serve.
+### Step 2 — Run the setup script
 
 ```bash
-cd frontend
-npm install
-npm run build
-cd ..
+chmod +x setup.sh
+./setup.sh
 ```
 
-After this, `frontend/out/` should exist and contain `index.html`.
-
-### Step 4 — Install Electron dependencies
-
-```bash
-npm install
-```
+This installs Node.js, xdotool, Electron dependencies, and builds the frontend.
 
 ---
 
-## Building the Ubuntu App (.AppImage)
-
-To create a standalone `.AppImage` file you can run on any Ubuntu machine without Node.js:
-
-```bash
-# Make sure you've already run: cd frontend && npm run build
-npm run dist:appimage
-```
-
-Output: `dist/Behavioral AI Bot-1.0.0.AppImage`
-
-Make it executable and run it:
-
-```bash
-chmod +x "dist/Behavioral AI Bot-1.0.0.AppImage"
-./"dist/Behavioral AI Bot-1.0.0.AppImage"
-```
-
-> **To run without installing:** AppImage files are self-contained — copy the `.AppImage` to any Ubuntu machine and double-click it.
-
----
-
-## Running the App — Step by Step
+## Running the App
 
 ### 1. Start the Windows server
 
-Run `start-server.bat` on the Windows machine. Note the IP address printed (e.g., `http://192.168.1.105:8000`).
+```powershell
+powershell -ExecutionPolicy Bypass -File start-server.ps1
+```
+
+Note the IP address printed (e.g. `http://192.168.1.105:8000`).
 
 ### 2. Launch the Ubuntu app
 
-**Dev mode** (from the project folder):
 ```bash
-npx electron .
-```
-
-**Or run the AppImage:**
-```bash
-./"dist/Behavioral AI Bot-1.0.0.AppImage"
+./run.sh
 ```
 
 ### 3. First-time configuration
 
 On first launch, a setup window appears asking for the server URL.
 
-Enter the URL printed by `start-server.bat`, for example:
+Enter the URL printed by the Windows script:
 ```
 http://192.168.1.105:8000
 ```
 
 Click **Save & Launch**. This is saved and won't be asked again.
 
-> To change the server URL later, close the app, delete `~/.config/behavioral-ai-bot/config.json`, and relaunch.
+> To reset the server URL, delete `~/.config/behavioral-ai-bot/config.json` and relaunch.
 
 ---
 
 ## Workflow Guide
-
-The app follows the Revelo behavioral annotation workflow. Here is the full step-by-step guide.
 
 ### Step 1 — Upload Requirements Document
 
@@ -207,13 +159,10 @@ The app follows the Revelo behavioral annotation workflow. Here is the full step
 2. Drag and drop the task requirement document (`.txt`, `.md`, `.pdf`, or any text file)
 3. Click **Use This & Continue**
 
-The document is stored in MongoDB and used to make prompts more accurate.
-
 ### Step 2 — Enter GitHub URL
 
 1. Paste the GitHub URL for the issue/commit you are working on
    - Any format works: commit URL, PR URL, issue URL, or plain repo URL
-   - Example: `https://github.com/iam4x/isomorphic-flux-boilerplate/commit/9fddd2d4ae201e6ddbdedbe6891fd37ed2af1cfe`
 2. (Optional) Enter a GitHub personal token to avoid rate limits
 3. Click **Fetch GitHub Data**
 4. When the data loads, click **Generate Prompts →**
@@ -222,13 +171,11 @@ The document is stored in MongoDB and used to make prompts more accurate.
 
 1. The app shows a prompt to copy into claude.ai
 2. Copy it → paste into [claude.ai](https://claude.ai) → send
-3. Copy Claude's response (which contains a JSON array) → paste back into the app
+3. Copy Claude's response → paste back into the app
 4. Click **Parse & Load Prompts**
 5. Review the 10 prompts and click **Start Interactions →**
 
 ### Step 4 — Run Interactions (repeat 10 times)
-
-For each interaction:
 
 #### 4a. Copy the prompt
 - The suggested prompt is shown in the **Prompt** box (editable)
@@ -236,42 +183,31 @@ For each interaction:
 
 #### 4b. Wait for Model A and B to respond
 
-The results are saved to `1.txt` in each cloned VSCode repo.
+Results are saved to `1.txt` in each cloned VSCode repo.
 
-**Use the File Watcher** (recommended — auto-fills the text areas):
+**Use the File Watcher** (auto-fills the text areas):
 1. Enter the path to each repo folder in the **Auto-read 1.txt** panel
-   - Example: `/home/user/repos/project-a`
-   - The app will look for `1.txt` inside that folder
 2. Click **Watch for 1.txt**
-3. The app polls every 2 seconds. When both files are written, they are automatically loaded into Model A and B text areas
+3. The app polls every 2 seconds — when both files are written, they are loaded automatically
 
 **Or paste manually:**
 - Copy the content of each `1.txt` file and paste into the Model A / Model B text areas
 
 #### 4c. Generate feedback
 1. Click **Generate Feedback**
-2. Copy the evaluation prompt that appears
-3. Paste it into [claude.ai](https://claude.ai) → send
-4. Copy Claude's JSON response → paste back into the app
-5. Click **Parse Feedback**
-
-The app displays:
-- **Preferred model** (A or B) with justification
-- **Model A Pros / Cons**
-- **Model B Pros / Cons**
-- **7 axis evaluations** with scores
+2. Copy the evaluation prompt
+3. Paste into [claude.ai](https://claude.ai) → send
+4. Copy Claude's JSON response → paste back → click **Parse Feedback**
 
 #### 4d. Enter answers in the terminal
 
 Use the **Terminal Automation** panel (requires xdotool):
 
-1. Click inside your `claude-hfi` terminal window to focus it
-2. For each field the terminal asks, click the matching **Type↵** button in the app
-3. The text is automatically typed + Enter pressed
+1. Click inside the `claude-hfi` terminal to focus it
+2. Click the matching **Type↵** button in the app for each field
+3. The text is automatically typed and Enter is pressed
 
 Or use **Copy** buttons to copy each value manually.
-
-**Quick model selection** — click `A`, `B`, `a`, `b`, `AA`, or `BB` to auto-type your preference.
 
 #### 4e. Continue
 - Click **Next Interaction →** in the app
@@ -280,38 +216,29 @@ Or use **Copy** buttons to copy each value manually.
 
 ### Step 5 — Finish
 
-After interaction 10:
 1. Click **Finish All Interactions**
 2. The **Done** page shows a summary of all 10 feedbacks
-3. Click **Copy All Feedback** to copy the full export
+3. Click **Copy All Feedback**
 
 ### Step 6 — Create the Tar File
 
 On the **Done** page:
-1. Enter the **source repo directory** (the cloned repo you worked on)
-2. Enter the **output `.tar` path** (e.g., `/home/user/final_state.tar`)
+1. Enter the **source repo directory**
+2. Enter the **output `.tar` path**
 3. Click **Create tar**
-
-This runs `tar cf output.tar /path/to/repo` — the same command required by Revelo.
 
 ### Step 7 — Submit on Revelo
 
-Fill in the Revelo platform forms with:
-- The final comments (from the **Done** page)
-- The transcript-level ratings
-- Upload the `.tar` file
+Fill in the Revelo platform forms with the final comments and ratings, then upload the `.tar` file.
 
 ---
 
 ## xdotool Terminal Automation
 
-xdotool types text into whichever window is currently focused. To use it:
+xdotool types text into whichever window is currently focused.
 
-1. **Install:** `sudo apt install xdotool`
-2. Click inside the `claude-hfi` terminal to focus it
-3. Click a **Type↵** button in the app — the text is typed and Enter is pressed
-
-> The app window must **not** be in focus when xdotool types. Click the terminal, then immediately click the button in the app (the button press refocuses the terminal within ~50ms — this is handled automatically).
+1. Click inside the `claude-hfi` terminal to focus it
+2. Click a **Type↵** button in the app — the text is typed and Enter is pressed
 
 ### xdotool on Wayland
 
@@ -331,78 +258,63 @@ echo $XDG_SESSION_TYPE   # should print "x11", not "wayland"
 
 ---
 
-## Creating the Tar File
-
-The Revelo guidelines require:
-```bash
-tar cf final_state.tar name_of_directory_to_tar
-```
-
-The app's **Done** page runs this automatically. Just provide:
-- **Source path:** the repo folder (e.g., `/home/user/repos/isomorphic-flux-boilerplate`)
-- **Output path:** where to save the tar (e.g., `/home/user/Desktop/final_state.tar`)
-
----
-
 ## Troubleshooting
 
 ### App shows "Build not found"
-The frontend static build is missing. Run:
 ```bash
 cd frontend && npm run build
 ```
 
 ### "Cannot connect to server" / API errors
-- Make sure `start-server.bat` is running on the Windows machine
-- Check the URL you entered (must include `http://` and port `:8000`)
+- Make sure `start-server.ps1` is running on the Windows machine
+- Check the URL (must include `http://` and port `:8000`)
 - Make sure port 8000 is allowed through the Windows Firewall
 - Both machines must be on the same network
 
+### MongoDB not starting
+Make sure MongoDB was installed as a Windows service, then:
+```powershell
+Start-Service -Name MongoDB
+Get-Service -Name MongoDB
+```
+
+### Backend not starting
+Make sure `setup-server.bat` was run first, then check Node.js is installed:
+```cmd
+node --version
+```
+
 ### xdotool types in the wrong window
-- Click the terminal window first, then quickly click the **Type↵** button
-- The button uses a short delay before typing so focus can switch back
+Click the terminal window first, then quickly click the **Type↵** button.
 
 ### xdotool not available
 ```bash
 sudo apt install xdotool
 ```
-If it still shows unavailable, restart the app after installing.
+
+Restart the app after installing.
 
 ### File watcher not detecting 1.txt
-- Make sure you enter the **folder path** (not the file path) — or the full path including `/1.txt`
-- The watcher detects writes **newer than** when you clicked "Watch". If the file already existed before you clicked Watch, manually click **Watch** again after the models finish responding.
-
-### MongoDB not connecting
-On Windows, make sure Docker Desktop is running, then:
-```cmd
-docker compose up -d mongodb
-```
-
-### Python backend not starting
-Make sure `setup-server.bat` was run first to create the venv. Then check:
-```cmd
-backend\.venv\Scripts\python.exe --version
-```
+- Enter the **folder path**, not the file path
+- If the file already existed before clicking Watch, click **Watch** again after the models finish
 
 ---
 
 ## Project Structure
 
 ```
-behavioral work/
-├── backend/                  # Python FastAPI server (runs on Windows)
-│   ├── app.py                # FastAPI app entry point
-│   ├── database.py           # MongoDB connection
-│   ├── models.py             # Pydantic models
-│   ├── requirements.txt      # Python dependencies
-│   ├── Dockerfile            # Optional Docker build
+behavioral_work/
+├── backend/                  # Node.js/Express server (runs on Windows)
+│   ├── server.js             # Entry point
+│   ├── db.js                 # MongoDB connection
+│   ├── package.json          # Backend dependencies
 │   └── routes/
-│       ├── documents.py      # Upload & store requirement docs
-│       ├── github.py         # Fetch GitHub URL data
-│       ├── prompts.py        # Generate 10 interaction prompts
-│       ├── feedback.py       # Generate feedback for each interaction
-│       ├── watcher.py        # Poll filesystem for 1.txt files
-│       └── automation.py     # xdotool + tar file creation
+│       ├── documents.js      # Upload & store requirement docs
+│       ├── github.js         # Fetch GitHub URL data
+│       ├── prompts.js        # Generate 10 interaction prompts
+│       ├── feedback.js       # Generate feedback for each interaction
+│       ├── watcher.js        # Poll filesystem for 1.txt files
+│       └── automation.js     # xdotool + tar file creation
 ├── electron/                 # Electron app (runs on Ubuntu)
 │   ├── main.js               # Main process — static server + config
 │   ├── preload.js            # Injects Windows server URL into renderer
@@ -420,11 +332,10 @@ behavioral work/
 │   │   └── Layout.js         # Navigation layout
 │   ├── styles/globals.css    # Global dark theme styles
 │   └── next.config.js        # Static export config
-├── docker-compose.yml        # MongoDB (run on Windows)
-├── setup-server.bat          # Windows: one-time backend setup
-├── start-server.bat          # Windows: start MongoDB + backend
+├── setup-server.bat          # Windows: one-time backend setup (npm install)
+├── start-server.bat          # Windows: start MongoDB service + backend
 ├── start-server.ps1          # Windows: PowerShell version (shows IP)
-├── setup.sh                  # Ubuntu: one-time system setup
-├── run.sh                    # Ubuntu: browser-only mode (no Electron)
-└── README.md                 # This file
+├── setup.sh                  # Ubuntu: one-time system + Electron setup
+├── run.sh                    # Ubuntu: launch the Electron app
+└── README.md
 ```
