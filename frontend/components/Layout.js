@@ -11,8 +11,10 @@ const NAV_ITEMS = [
 export default function Layout({ children, step = 1 }) {
   const router = useRouter();
   const [serverUrl, setServerUrl] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (window.electronAPI) {
       window.electronAPI.getServerUrl().then(setServerUrl);
     } else {
@@ -42,12 +44,12 @@ export default function Layout({ children, step = 1 }) {
           ))}
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {serverUrl && (
+          {mounted && serverUrl && (
             <span style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'monospace' }}>
               {serverUrl}
             </span>
           )}
-          {typeof window !== 'undefined' && window.electronAPI && (
+          {mounted && window.electronAPI && (
             <button className="copy-btn" onClick={handleChangeUrl}>
               Edit URL
             </button>
