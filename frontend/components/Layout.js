@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Upload' },
@@ -9,13 +10,28 @@ const NAV_ITEMS = [
 
 export default function Layout({ children, step = 1 }) {
   const router = useRouter();
+  const [serverUrl, setServerUrl] = useState('');
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.getServerUrl().then(setServerUrl);
+    } else {
+      setServerUrl(window.__API_BASE__ || 'http://localhost:8000');
+    }
+  }, []);
+
+  async function handleChangeUrl() {
+    if (!window.electronAPI) return;
+    const newUrl = await window.electronAPI.changeServerUrl();
+    if (newUrl) setServerUrl(newUrl);
+  }
 
   return (
     <div>
       <div className="header">
         <h1>Behavioral AI Bot</h1>
         <nav>
-          {NAV_ITEMS.map((item, i) => (
+          {NAV_ITEMS.map((item) => (
             <span
               key={item.href}
               className={router.pathname === item.href ? 'active' : ''}
@@ -25,13 +41,25 @@ export default function Layout({ children, step = 1 }) {
             </span>
           ))}
         </nav>
-        <div className="step-dots">
-          {[1, 2, 3, 4].map((s) => (
-            <div
-              key={s}
-              className={`step-dot${s === step ? ' active' : ''}${s < step ? ' done' : ''}`}
-            />
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {serverUrl && (
+            <span style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'monospace' }}>
+              {serverUrl}
+            </span>
+          )}
+          {typeof window !== 'undefined' && window.electronAPI && (
+            <button className="copy-btn" onClick={handleChangeUrl}>
+              Edit URL
+            </button>
+          )}
+          <div className="step-dots">
+            {[1, 2, 3, 4].map((s) => (
+              <div
+                key={s}
+                className={`step-dot${s === step ? ' active' : ''}${s < step ? ' done' : ''}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
       <div className="container">

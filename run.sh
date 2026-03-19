@@ -27,4 +27,4 @@ if [ "${XDG_SESSION_TYPE}" = "wayland" ]; then
 fi
 
 cd "$ROOT"
-npx electron .
+npx electron . --no-sandbox
