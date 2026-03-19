@@ -121,7 +121,7 @@ function showSetupWindow(existingUrl) {
 
 // ── Main window ───────────────────────────────────────────────────────────────
 
-function createMainWindow(serverUrl) {
+function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 900,
@@ -134,7 +134,6 @@ function createMainWindow(serverUrl) {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      additionalArguments: [`--api-base=${serverUrl}`],
     },
   });
 
@@ -172,12 +171,16 @@ app.whenReady().then(async () => {
     return;
   }
 
-  createMainWindow(serverUrl);
+  createMainWindow();
 
-  // Menu item to change server URL
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow(serverUrl);
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
+});
+
+// Sync handler — called by preload on every load to get the current URL
+ipcMain.on('get-server-url-sync', (e) => {
+  e.returnValue = readConfig().serverUrl || 'http://localhost:8000';
 });
 
 // Allow changing server URL from renderer
