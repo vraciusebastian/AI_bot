@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import fastapi, uvicorn, pymongo, motor, httpx; print\\(''All Python imports OK''\\)\")",
+      "Bash(npx electron:*)"
+    ]
+  }
+}

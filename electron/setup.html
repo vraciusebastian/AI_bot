@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Server Setup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f1117;
+      color: #e2e4f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 32px;
+    }
+    .box { width: 100%; max-width: 440px; }
+    h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    p  { font-size: 13px; color: #8b8fa8; margin-bottom: 24px; line-height: 1.6; }
+    label { font-size: 12px; color: #8b8fa8; display: block; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #161822;
+      border: 1px solid #2a2d3e;
+      border-radius: 8px;
+      color: #e2e4f0;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 20px;
+    }
+    input:focus { border-color: #7c6bf5; }
+    button {
+      width: 100%;
+      padding: 11px;
+      background: #7c6bf5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover { background: #5b4ed4; }
+    .hint { font-size: 11px; color: #8b8fa8; margin-top: 12px; text-align: center; }
+    code { background: #1e2030; padding: 1px 5px; border-radius: 3px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Connect to Windows Server</h2>
+    <p>
+      Enter the IP address and port of the Windows machine running the backend.
+      Example: <code>http://192.168.1.100:8000</code>
+    </p>
+    <label>Windows Server URL</label>
+    <input
+      type="text"
+      id="url"
+      placeholder="http://192.168.1.100:8000"
+      autocomplete="off"
+    />
+    <button onclick="save()">Save &amp; Launch</button>
+    <p class="hint">You can change this later from the app settings.</p>
+  </div>
+
+  <script>
+    window.configAPI.onCurrentUrl((url) => {
+      if (url) document.getElementById('url').value = url;
+    });
+
+    function save() {
+      const val = document.getElementById('url').value.trim();
+      if (!val) { document.getElementById('url').style.borderColor = '#f56565'; return; }
+      window.configAPI.saveUrl(val);
+    }
+
+    document.getElementById('url').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') save();
+    });
+  </script>
+</body>
+</html>

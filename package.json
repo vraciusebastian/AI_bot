@@ -1,0 +1,42 @@
+{
+  "name": "behavioral-ai-bot",
+  "version": "1.0.0",
+  "description": "AI bot for behavioral data debugging annotation tasks",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "dist:linux": "npm run build:frontend && electron-builder --linux",
+    "dist:appimage": "npm run build:frontend && electron-builder --linux AppImage",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.behavioral.aibot",
+    "productName": "Behavioral AI Bot",
+    "copyright": "2025",
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb",      "arch": ["x64"] }
+      ],
+      "category": "Development",
+      "maintainer": "behavioral-ai-bot"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/out/**/*",
+      "!**/node_modules/.cache/**",
+      "!**/.next/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true
+  },
+  "dependencies": {
+    "electron": "^33.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^25.0.0"
+  }
+}
