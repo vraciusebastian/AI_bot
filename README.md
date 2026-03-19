@@ -260,6 +260,16 @@ echo $XDG_SESSION_TYPE   # should print "x11", not "wayland"
 
 ## Troubleshooting
 
+### `apt` lock error during setup.sh
+
+If you see `E: Could not get lock /var/lib/apt/lists/lock`, Ubuntu's automatic update daemon is running in the background. Kill it and clear the lock:
+
+```bash
+sudo killall aptd
+sudo rm -f /var/lib/apt/lists/lock /var/lib/apt/lists/lock-frontend
+./setup.sh
+```
+
 ### App shows "Build not found"
 ```bash
 cd frontend && npm run build

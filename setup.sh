@@ -24,7 +24,7 @@ sudo apt-get install -y \
   libatspi2.0-0 \
   libdrm2 \
   libgbm1 \
-  libasound2
+  libasound2t64
 
 # ── 2. Node.js ────────────────────────────────────────────────────────────────
 echo ""
