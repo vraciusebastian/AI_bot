@@ -6,21 +6,39 @@ import { apiFetch, apiUpload } from '../components/api';
 export default function UploadPage() {
   const router = useRouter();
   const fileRef = useRef(null);
-  const [docs, setDocs] = useState([]);
+  const [docs, setDocs]           = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-  const [dragover, setDragover] = useState(false);
+  const [error, setError]         = useState('');
+  const [dragover, setDragover]   = useState(false);
+  const [urlInput, setUrlInput]   = useState('');
+  const [urlSaving, setUrlSaving] = useState(false);
 
   useEffect(() => {
     loadDocs();
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      window.electronAPI.getServerUrl().then(setUrlInput);
+    } else {
+      setUrlInput(window.__API_BASE__ || 'http://localhost:8000');
+    }
   }, []);
 
   async function loadDocs() {
+    setError('');
     try {
       const data = await apiFetch('/api/documents/');
       setDocs(data);
-    } catch (e) {
-      setError('Could not load documents. Is the backend running?');
+    } catch {
+      setError('Could not reach the backend.');
+    }
+  }
+
+  async function handleSaveUrl() {
+    const trimmed = urlInput.trim().replace(/\/$/, '');
+    if (!trimmed) return;
+    if (window.electronAPI) {
+      setUrlSaving(true);
+      await window.electronAPI.setServerUrl(trimmed);
+      // page will reload automatically
     }
   }
 
@@ -68,6 +86,31 @@ export default function UploadPage() {
           and used to generate better debugging prompts.
         </p>
 
+        {/* Server URL editor */}
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="card-title">Server URL</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveUrl()}
+              placeholder="http://192.168.1.105:8000"
+              style={{ flex: 1 }}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveUrl}
+              disabled={urlSaving || !urlInput.trim()}
+            >
+              {urlSaving ? 'Saving…' : 'Save & Reconnect'}
+            </button>
+            <button className="btn btn-secondary" onClick={loadDocs}>
+              Retry
+            </button>
+          </div>
+        </div>
+
         <div
           className={`upload-zone${dragover ? ' dragover' : ''}`}
           onClick={() => fileRef.current?.click()}
@@ -108,7 +151,6 @@ export default function UploadPage() {
                   <button
                     className="btn btn-small btn-secondary"
                     onClick={() => {
-                      // Store selected document ID for later use
                       localStorage.setItem('selected_doc_id', doc.id);
                       router.push('/github');
                     }}
@@ -129,10 +171,7 @@ export default function UploadPage() {
         )}
 
         <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => router.push('/github')}
-          >
+          <button className="btn btn-secondary" onClick={() => router.push('/github')}>
             Skip — Continue Without Document
           </button>
         </div>

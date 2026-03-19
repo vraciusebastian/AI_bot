@@ -155,16 +155,12 @@ app.whenReady().then(async () => {
     return;
   }
 
-  // Load or request server URL
+  // Always show setup window on startup so user can confirm or change the URL
   const config = readConfig();
-  let serverUrl = config.serverUrl;
-
+  let serverUrl = await showSetupWindow(config.serverUrl || null);
   if (!serverUrl) {
-    serverUrl = await showSetupWindow(null);
-    if (!serverUrl) {
-      app.quit();
-      return;
-    }
+    app.quit();
+    return;
   }
 
   // Start static file server
@@ -191,6 +187,11 @@ ipcMain.handle('change-server-url', async () => {
   const newUrl = await showSetupWindow(config.serverUrl);
   if (newUrl) mainWindow && mainWindow.reload();
   return newUrl;
+});
+ipcMain.handle('set-server-url', (_e, url) => {
+  const trimmed = url.trim().replace(/\/$/, '');
+  saveConfig({ serverUrl: trimmed });
+  mainWindow && mainWindow.reload();
 });
 
 app.on('window-all-closed', () => {
